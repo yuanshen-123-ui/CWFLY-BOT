@@ -269,6 +269,8 @@ function announceControllerOffline(controller) {
 }
 
 function pushOffline(controller) {
+  const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
+  if (!groupId || !controller?.callsign) return
   const text = buildControllerCard(controller, 'offline')
   console.log('[Bot] 下线播报内容:\n' + text)
   let sent = 0
