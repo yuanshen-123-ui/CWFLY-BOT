@@ -164,6 +164,7 @@ let botReady = false
 
 // 等待 ATIS 的控制器（上线通知延迟，最多等 10 秒让 ATIS 到达）
 const pendingOnline = new Map() // callsign -> { controller, timer }
+const pendingOffline = new Map() // callsign -> { timer }（下线延迟，可被上线取消）
 
 function announceControllerOnline(controller) {
   const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
@@ -173,6 +174,13 @@ function announceControllerOnline(controller) {
     return
   }
   const key = controller.callsign.toUpperCase()
+
+  // 会话恢复补播会先发 #DA 再发 #AA：取消待发的下线通知，避免先弹下线再弹上线
+  const _pendingOff = pendingOffline.get(key)
+  if (_pendingOff) {
+    clearTimeout(_pendingOff.timer)
+    pendingOffline.delete(key)
+  }
 
   // 已带 ATIS：直接推送
   if (controller.atis) {
@@ -229,6 +237,18 @@ function announceControllerOffline(controller) {
     clearTimeout(pendingOnline.get(key).timer)
     pendingOnline.delete(key)
   }
+  // 延迟 2 秒推送：会话恢复紧接着会发 #AA，若 2 秒内上线则取消本下线通知
+  if (pendingOffline.has(key)) {
+    clearTimeout(pendingOffline.get(key).timer)
+  }
+  const timer = setTimeout(() => {
+    pendingOffline.delete(key)
+    pushOffline(controller)
+  }, 2000)
+  pendingOffline.set(key, { timer })
+}
+
+function pushOffline(controller) {
   const text = buildControllerCard(controller, 'offline')
   let sent = 0
   for (const ws of wss.clients) {
@@ -239,6 +259,7 @@ function announceControllerOffline(controller) {
   }
   console.log(`[Bot] 下线通知已推送 ${controller.callsign} → group=${groupId} clients=${sent}`)
 }
+
 
 wss.on('listening', () => {
   // 预连接 FSD9，确保 /在线状态、/机组查询 等立即可用
