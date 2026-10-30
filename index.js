@@ -9,6 +9,7 @@
  */
 
 import 'dotenv/config'
+import { isNotifySkipped } from './utils/notifyFilter.js'
 import { WebSocketServer } from 'ws'
 import { dispatch } from './commands/index.js'
 import { getFSD9Client } from './services/fsd9.js'
@@ -151,6 +152,10 @@ let botReady = false
 const pendingOnline = new Map() // callsign -> { controller, timer }
 
 function announceControllerOnline(controller) {
+  if (isNotifySkipped(controller)) {
+    console.log(`[Bot] 免播报名单，跳过上线通知 ${controller.callsign} (cid=${controller.cid})`)
+    return
+  }
   const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
   if (!botReady || !groupId || !controller?.callsign) return
   const key = controller.callsign.toUpperCase()
@@ -198,6 +203,10 @@ function onControllerAtis({ callsign }) {
 }
 
 function announceControllerOffline(controller) {
+  if (isNotifySkipped(controller)) {
+    console.log(`[Bot] 免播报名单，跳过下线通知 ${controller.callsign} (cid=${controller.cid})`)
+    return
+  }
   const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
   if (!botReady || !groupId || !controller?.callsign) return
   const key = controller.callsign.toUpperCase()

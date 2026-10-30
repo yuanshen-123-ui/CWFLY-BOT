@@ -13,6 +13,7 @@ import { WebSocketServer } from 'ws'
 import { dispatch } from './commands/index.js'
 import { getFSD9Client } from './services/fsd9.js'
 import { sendGroupMessage } from './utils/onebot.js'
+import { isNotifySkipped } from './utils/notifyFilter.js'
 
 const WS_HOST = process.env.BOT_WS_HOST || '127.0.0.1'
 const WS_PORT = Number(process.env.BOT_WS_PORT || 6700)
@@ -167,6 +168,10 @@ const pendingOnline = new Map() // callsign -> { controller, timer }
 function announceControllerOnline(controller) {
   const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
   if (!botReady || !groupId || !controller?.callsign) return
+  if (isNotifySkipped(controller)) {
+    console.log(`[Bot] 免播报名单，跳过上线通知 ${controller.callsign} (cid=${controller.cid})`)
+    return
+  }
   const key = controller.callsign.toUpperCase()
 
   // 已带 ATIS：直接推送
@@ -214,6 +219,10 @@ function onControllerAtis({ callsign }) {
 function announceControllerOffline(controller) {
   const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
   if (!botReady || !groupId || !controller?.callsign) return
+  if (isNotifySkipped(controller)) {
+    console.log(`[Bot] 免播报名单，跳过下线通知 ${controller.callsign} (cid=${controller.cid})`)
+    return
+  }
   const key = controller.callsign.toUpperCase()
   // 取消该管制员待发的上线通知
   if (pendingOnline.has(key)) {

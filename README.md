@@ -63,6 +63,7 @@ CWFLY 社区的 **QQ 群机器人**，通过 OneBot v11 协议接入（实测环
 | AI | `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL` / `AI_MODELS` | OpenAI 兼容接口与模型列表 |
 | 群组 | `ALLOWED_GROUP_IDS` / `CONTROL_GROUP_ID` / `NOTIFY_GROUP_ID` | 允许服务的群、管理群、通知群 |
 | 群组 | `BOT_ADMIN_QQ` | 机器人管理员 QQ |
+| 群组 | `NOTIFY_SKIP_CIDS` / `NOTIFY_SKIP_CALLSIGNS` | 免播报名单：这些 CID/呼号上线、下线时不推送群通知（逗号分隔） |
 | 其他 | `DOWNLOAD_DIR` / `AIRPORT_CACHE_FILE` | 下载目录、机场数据缓存文件 |
 
 ---
