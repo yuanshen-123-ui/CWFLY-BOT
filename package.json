@@ -1,0 +1,16 @@
+{
+  "name": "cwfly-onebot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "csv-parse": "^7.0.1",
+    "dotenv": "^17.4.2",
+    "mariadb": "^3.5.3",
+    "ws": "^8.21.1"
+  }
+}
