@@ -118,6 +118,5 @@ python main.py            # 或 .\start-py.ps1
 | [CWFLY-FSD](https://github.com/yuanshen-123-ui/CWFLY-FSD) | FSD 服务器（机器人以 CID 0000 接入） |
 | [CWFLY-ATC](https://github.com/yuanshen-123-ui/CWFLY-ATC) | 管制中心 |
 | [CWFLY-DOCS](https://github.com/yuanshen-123-ui/CWFLY-DOCS) | 文档站（含机器人命令说明） |
-| CWFLY-DEPLOY（私有） | 部署脚本（含 NapCat 安装/自启脚本） |
 
 > 本仓库由 CWFLY 主仓库于 2026-10-30 拆分而来，初始提交为当时快照（不含历史）。
