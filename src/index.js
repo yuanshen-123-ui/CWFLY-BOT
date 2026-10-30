@@ -48,6 +48,14 @@ wss.on('connection', (ws, request) => {
   if (!botReady) {
     setTimeout(() => {
       botReady = true
+      // 补播排队中的真实上线事件（启动期间到来的登录）
+      if (pendingReadyOnline.length) {
+        const queued = pendingReadyOnline.splice(0)
+        for (const c of queued) {
+          try { announceControllerOnline(c) } catch {}
+        }
+        console.log(`[Bot] 补播启动期间排队的上线事件 ${queued.length} 条`)
+      }
       console.log('[Bot] Ready, 管制上下线通知已启用')
     }, 2000)
   }
@@ -161,6 +169,10 @@ function buildControllerCard(controller, type) {
 
 // 是否已就绪（等待 OneBot 连接建立后再推送，避免启动时快照刷屏 + 空连接发送）
 let botReady = false
+// FSD 启动/重连后的同步窗口截止时间：窗口内的 controller:add 是「已有在线快照」，不播报
+let fsdSyncUntil = 0
+// OneBot 尚未就绪时收到的真实上线事件，先排队，就绪后补播
+const pendingReadyOnline = []
 
 // 等待 ATIS 的控制器（上线通知延迟，最多等 10 秒让 ATIS 到达）
 const pendingOnline = new Map() // callsign -> { controller, timer }
@@ -168,7 +180,13 @@ const pendingOffline = new Map() // callsign -> { timer }（下线延迟，可�
 
 function announceControllerOnline(controller) {
   const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
-  if (!botReady || !groupId || !controller?.callsign) return
+  if (!groupId || !controller?.callsign) return
+  // FSD 启动/重连瞬间的同步快照（已有在线者）不播报
+  if (Date.now() < fsdSyncUntil) return
+  if (!botReady) {
+    pendingReadyOnline.push(controller)
+    return
+  }
   if (isNotifySkipped(controller)) {
     console.log(`[Bot] 免播报名单，跳过上线通知 ${controller.callsign} (cid=${controller.cid})`)
     return
@@ -226,7 +244,8 @@ function onControllerAtis({ callsign }) {
 
 function announceControllerOffline(controller) {
   const groupId = process.env.NOTIFY_GROUP_ID || process.env.CONTROL_GROUP_ID
-  if (!botReady || !groupId || !controller?.callsign) return
+  if (!groupId || !controller?.callsign) return
+  if (!botReady) return
   if (isNotifySkipped(controller)) {
     console.log(`[Bot] 免播报名单，跳过下线通知 ${controller.callsign} (cid=${controller.cid})`)
     return
@@ -264,7 +283,11 @@ function pushOffline(controller) {
 wss.on('listening', () => {
   // 预连接 FSD9，确保 /在线状态、/机组查询 等立即可用
   const client = getFSD9Client()
-  client.on('controller:add', announceControllerOnline)
+  client.on('connect', () => {
+  // 刚连上 FSD 时会收到一批已有在线客户端，2 秒内视为快照，不播报
+  fsdSyncUntil = Date.now() + 2000
+})
+client.on('controller:add', announceControllerOnline)
   client.on('controller:remove', announceControllerOffline)
   client.on('controller:atis', onControllerAtis)
   console.log(`

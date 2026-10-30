@@ -137,6 +137,7 @@ class FSD9Client extends EventEmitter {
 
     this.socket = connect({ host: FSD_HOST, port: FSD_PORT }, () => {
       console.log(`[FSD9] Connected to ${FSD_HOST}:${FSD_PORT}`)
+      this.emit('connect')
       this.connected = true
     })
 
